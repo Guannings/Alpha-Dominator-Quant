@@ -67,6 +67,7 @@ class StrategyConfig:
     entropy_lambda: float = 0.15  # Shannon Entropy coefficient
     min_effective_n: float = 3.0
     growth_anchor_penalty: float = 50.0  # High-priority penalty multiplier for Growth Anchor constraint
+    turnover_penalty: float = 500.0  # The Turnover Brake penalty multiplier
 
     # Adaptive rebalancing candidates
     rebalance_candidates: Tuple[int, ...] = (21, 42, 63)
@@ -80,6 +81,9 @@ class StrategyConfig:
 
     # EMA smoothing for ML probabilities
     prob_ema_span: int = 10  # 10-day EMA for heavy smoothing
+
+    # Floating point tolerance for constraint checks
+    constraint_tolerance: float = 0.001
 
     # UI colors
     alert_background_color: str = '#FFCCCC'  # Light Red for health dashboard alerts
@@ -641,7 +645,7 @@ class AlphaDominatorOptimizer:
     - Gold Cap: GLD capped at 5% maximum
     - Kill Sharpe/Volatility Traps: No vol penalty on growth leaders
     - Shannon Entropy: Maximize IR_Score + (0.15 × Shannon Entropy)
-    - Turnover Brake: Penalty = sum(abs(new - old)) * 500
+    - Turnover Brake: Penalty = sum(abs(new - old)) * turnover_penalty (configurable)
     """
 
     def __init__(
@@ -666,8 +670,8 @@ class AlphaDominatorOptimizer:
             if a in assets
         ]
 
-        # Current weights for turnover penalty (initialized to zeros)
-        self.current_weights = np.zeros(self.n_assets)
+        # Current weights for turnover penalty (None = first optimization, skip penalty)
+        self.current_weights: Optional[np.ndarray] = None
 
         logger.info(f"AlphaDominator: {self.n_assets} assets, growth_anchor_idx={self.growth_anchor_idx}, "
                     f"gold_idx={self.gold_idx}")
@@ -809,7 +813,7 @@ class AlphaDominatorOptimizer:
 
         NO SHARPE TRAP - no volatility penalty on growth leaders.
         GROWTH ANCHOR - soft penalty if Growth Anchors < 60%
-        TURNOVER BRAKE - penalty = sum(abs(new - old)) * 500
+        TURNOVER BRAKE - penalty = sum(abs(new - old)) * turnover_penalty (configurable)
         """
         aligned_ir = information_ratio.reindex(pd.Index(self.assets)).fillna(0).values
         mean_ret_arr = mean_ret.values
@@ -817,6 +821,7 @@ class AlphaDominatorOptimizer:
         entropy_lambda = self.config.entropy_lambda  # 0.15
         min_growth_anchor = self.config.min_growth_anchor  # 60%
         growth_anchor_penalty_mult = self.config.growth_anchor_penalty  # High-priority penalty multiplier
+        turnover_penalty_mult = self.config.turnover_penalty  # The Turnover Brake
 
         # Scale IR scores to positive range for objective
         ir_scaled = np.where(aligned_ir > 0, aligned_ir, 0)
@@ -827,8 +832,8 @@ class AlphaDominatorOptimizer:
         boosted_returns = mean_ret_arr * (1.0 + 2.0 * ir_scaled)
 
         growth_anchor_idx = self.growth_anchor_idx
-        old_weights = self.current_weights.copy()
-        turnover_penalty_mult = 500  # The Turnover Brake
+        # Use zeros for first optimization to skip turnover penalty
+        old_weights = self.current_weights if self.current_weights is not None else np.zeros(self.n_assets)
 
         def objective(w):
             # IR Score component (no vol penalty - Kill Sharpe Trap)
@@ -845,7 +850,7 @@ class AlphaDominatorOptimizer:
             growth_weight = sum(w[idx] for idx in growth_anchor_idx)
             growth_penalty = max(0, min_growth_anchor - growth_weight) ** 2 * growth_anchor_penalty_mult
 
-            # TURNOVER BRAKE: Penalty for excessive trading
+            # TURNOVER BRAKE: Penalty for excessive trading (skipped on first call)
             turnover = np.sum(np.abs(w - old_weights))
             turnover_penalty = turnover * turnover_penalty_mult
 
@@ -864,8 +869,9 @@ class AlphaDominatorOptimizer:
         mean_ret_arr = mean_ret.values
         cov_arr = cov.values
         rf = self.config.risk_free_rate
-        old_weights = self.current_weights.copy()
-        turnover_penalty_mult = 500  # The Turnover Brake
+        turnover_penalty_mult = self.config.turnover_penalty  # The Turnover Brake
+        # Use zeros for first optimization to skip turnover penalty
+        old_weights = self.current_weights if self.current_weights is not None else np.zeros(self.n_assets)
 
         def objective(w):
             port_ret = np.dot(w, mean_ret_arr)
@@ -877,7 +883,7 @@ class AlphaDominatorOptimizer:
 
             sharpe = (port_ret - rf) / port_vol
 
-            # TURNOVER BRAKE: Penalty for excessive trading
+            # TURNOVER BRAKE: Penalty for excessive trading (skipped on first call)
             turnover = np.sum(np.abs(w - old_weights))
             turnover_penalty = turnover * turnover_penalty_mult
 
@@ -892,13 +898,14 @@ class AlphaDominatorOptimizer:
     ) -> callable:
         """DEFENSIVE: Minimum variance with Turnover Brake."""
         cov_arr = cov.values
-        old_weights = self.current_weights.copy()
-        turnover_penalty_mult = 500  # The Turnover Brake
+        turnover_penalty_mult = self.config.turnover_penalty  # The Turnover Brake
+        # Use zeros for first optimization to skip turnover penalty
+        old_weights = self.current_weights if self.current_weights is not None else np.zeros(self.n_assets)
 
         def objective(w):
             variance = np.dot(w.T, np.dot(cov_arr, w))
 
-            # TURNOVER BRAKE: Penalty for excessive trading
+            # TURNOVER BRAKE: Penalty for excessive trading (skipped on first call)
             turnover = np.sum(np.abs(w - old_weights))
             turnover_penalty = turnover * turnover_penalty_mult
 
@@ -1613,7 +1620,6 @@ def main():
     print(f"Adaptive Rebalance Setting: {current_rebal} days")
 
     diag = engine.final_diagnostics
-    tolerance = 0.001  # Floating point tolerance for checks
     if diag:
         eff_n = diag.get('effective_n', 0)
         status = "✓ GOOD" if eff_n >= config.min_effective_n else "✗ LOW"
@@ -1622,12 +1628,12 @@ def main():
 
         # Growth Anchor status (with tolerance)
         growth_weight = diag.get('growth_anchor_weight', 0)
-        growth_status = "✓ MET" if growth_weight >= (config.min_growth_anchor - tolerance) else "✗ BELOW"
+        growth_status = "✓ MET" if growth_weight >= (config.min_growth_anchor - config.constraint_tolerance) else "✗ BELOW"
         print(f"GROWTH ANCHOR (QQQ+XLK+SMH+VGT): {growth_weight:.1%} {growth_status} (Min: {config.min_growth_anchor:.0%})")
 
         # Gold Cap status (with tolerance)
         gold_weight = diag.get('gold_weight', 0)
-        gold_status = "✓ OK" if gold_weight <= (config.gold_cap_risk_on + tolerance) else "✗ OVER"
+        gold_status = "✓ OK" if gold_weight <= (config.gold_cap_risk_on + config.constraint_tolerance) else "✗ OVER"
         print(f"GOLD CAP: {gold_weight:.1%} {gold_status} (Max: {config.gold_cap_risk_on:.0%})")
     print()
 
