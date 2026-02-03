@@ -996,9 +996,12 @@ class AlphaDominatorOptimizer:
 
         weights = np.zeros(self.n_assets)
 
+        # Convert to set for O(1) lookup
+        growth_anchor_set = set(self.growth_anchor_idx)
+
         # Identify eligible growth anchors and other eligible assets
         eligible_anchor_idx = [idx for idx in self.growth_anchor_idx if eligible_mask[idx]]
-        eligible_other_idx = [idx for idx in np.where(eligible_mask)[0] if idx not in self.growth_anchor_idx]
+        eligible_other_idx = [idx for idx in np.where(eligible_mask)[0] if idx not in growth_anchor_set]
 
         # 60% Floor for Growth Anchors
         if eligible_anchor_idx:
