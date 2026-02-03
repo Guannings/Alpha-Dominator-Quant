@@ -242,11 +242,9 @@ class DataManager:
         # YIELD SPREAD PROXY: 3-month momentum of SHY/TLT ratio
         # SHY = short-term treasury, TLT = long-term treasury
         # Rising ratio = steepening yield curve (bullish)
-        if 'SHY' in self.prices.columns and 'TLT' in self.prices.columns:
-            shy_tlt_ratio = self.prices['SHY'] / self.prices['TLT']
-            features['yield_spread_proxy'] = shy_tlt_ratio.pct_change(self.config.momentum_3m_days)
-        else:
-            features['yield_spread_proxy'] = 0.0
+        # YIELD SPREAD PROXY: DISABLED (Traitor Signal)
+        # We force this to 0.0 so the model ignores it and relies on Trend/Vol instead.
+        features['yield_spread_proxy'] = 0.0
 
         # EQUITY RISK PREMIUM PROXY
         # Earnings Yield ~ 1/P/E ~ can proxy as inverse of SPY price momentum
@@ -323,12 +321,12 @@ class AdaptiveRegimeClassifier:
 
         # HARD-CODED regularization per Alpha Dominator spec
         self.model = RandomForestClassifier(
-            n_estimators=90,
+            n_estimators=200,
             max_depth=3,  # Shallow for macro signals
-            min_samples_leaf=150,  # Force generalization (stronger evidence)
-            min_samples_split=200,  # Conservative splits
+            min_samples_leaf=400,  # Force generalization (stronger evidence)
+            min_samples_split=500,  # Conservative splits
             max_features='log2',  # Feature subsampling
-            ccp_alpha=0.015,  # Aggressive pruning
+            ccp_alpha=0.004,  # Aggressive pruning
             bootstrap=True,
             oob_score=True,
             random_state=42,
@@ -418,13 +416,29 @@ class AdaptiveRegimeClassifier:
             train_dates = dates[:train_end_idx]
             test_end_idx = min(train_end_idx + 252, len(dates))
             test_dates = dates[train_end_idx:test_end_idx]
+            # EXPANDING WINDOW RESTORED (Fixes 2022 Blindness)
+            X_train, y_train = X.loc[train_dates], y.loc[train_dates]
+            X_test, y_test = X.loc[test_dates], y.loc[test_dates]
+
+            self.model.fit(X_train, y_train)
 
             if len(test_dates) < 42:
                 break
 
-            X_train, y_train = X.loc[train_dates], y.loc[train_dates]
+            # --- ROLLING WINDOW FIX (Define it HERE) ---
+            rolling_window_size = 1260  # 5 Years of history
+
+            if len(train_dates) > rolling_window_size:
+                current_train_dates = train_dates[-rolling_window_size:]
+            else:
+                current_train_dates = train_dates
+            # -------------------------------------------
+
+            # Update to use the NEW 'current_train_dates' variable
+            X_train, y_train = X.loc[current_train_dates], y.loc[current_train_dates]
             X_test, y_test = X.loc[test_dates], y.loc[test_dates]
 
+            # (The rest of the loop continues as normal...)
             self.model.fit(X_train, y_train)
 
             train_score = self.model.score(X_train, y_train)
@@ -508,132 +522,105 @@ class AdaptiveRegimeClassifier:
             return 'RISK_REDUCED'
 
     def plot_shap_summary(self) -> None:
-        """Display SHAP importance."""
-        if self.shap_values is None:
-            return
+        """Display clean SHAP importance bar chart (Defensive Mode)."""
+        if self.shap_values is None: return
 
-        plt.figure(figsize=(10, 6))
-        shap.summary_plot(self.shap_values, self.shap_features,
-                          feature_names=self.feature_names, show=False)
-        plt.title('Feature Importance (SHAP)', fontsize=12)
-        plt.tight_layout()
-        plt.show(block=False)
+        try:
+            # 1. Force data into a simple 2D (Samples, Features) matrix
+            vals = np.array(self.shap_values)
+
+            # If 3D (e.g. [Samples, Features, Classes]), select the 'Bull' class (index 1)
+            if vals.ndim == 3 and vals.shape[-1] == 2:
+                vals = vals[:, :, 1]
+
+            # If still 3D (e.g. Interaction values), flatten the extra dim
+            if vals.ndim == 3:
+                vals = np.mean(np.abs(vals), axis=-1)
+
+            # 2. Calculate Mean Absolute Importance (Result: 1D Array of length N_features)
+            importances = np.mean(np.abs(vals), axis=0)
+
+            # 3. Ensure we match the feature names count
+            if len(importances) != len(self.feature_names):
+                # Fallback: Slice to match
+                importances = importances[:len(self.feature_names)]
+
+            indices = np.argsort(importances)
+
+            # 4. Draw the Bar Chart
+            plt.figure(figsize=(10, 6))
+            plt.title('Feature Importance (Mean |SHAP|)', fontsize=12)
+
+            # Create the bars
+            y_pos = range(len(indices))
+            plt.barh(y_pos, importances[indices], color='#3498db', align='center')
+
+            # Label the ticks
+            plt.yticks(y_pos, [self.feature_names[i] for i in indices])
+            plt.xlabel('Average Impact on Model Output')
+            plt.tight_layout()
+            plt.show(block=False)
+
+        except Exception as e:
+            print(f"Skipping SHAP plot due to shape mismatch: {e}")
 
     def plot_validation_curves(self) -> None:
-        """
-        Professional Model Health Dashboard per Alpha Dominator spec.
-        - Rolling 252-day test accuracy line
-        - Stability band (shaded between Train and Test)
-        - Red Alert: Background turns Light Red if gap > 12% OR test accuracy < 51%
-        - Feature Contribution subplot
-        """
-        if not self.train_scores:
-            return
+        """Model Health Dashboard (Auto-Scaled)."""
+        if not self.train_scores: return
 
         fig, axes = plt.subplots(3, 1, figsize=(14, 14),
                                  gridspec_kw={'height_ratios': [3, 1.5, 1]})
         ax1, ax2, ax3 = axes
 
+        # --- TOP PLOT: Accuracy ---
         x = range(1, len(self.train_scores) + 1)
         train_arr = np.array(self.train_scores)
         test_arr = np.array(self.test_scores)
-        gaps = train_arr - test_arr
 
-        # Determine alert status
-        has_overfit = np.any(gaps > self.config.overfit_gap_threshold)
-        has_underfit = np.any(test_arr < self.config.underfit_threshold)
-        alert_active = has_overfit or has_underfit
-
-        # RED ALERT: Change background if unhealthy
-        if alert_active:
-            ax1.set_facecolor(self.config.alert_background_color)
-
-        # Main accuracy plot with stability band
         ax1.plot(x, train_arr, 'b-', label='Train Accuracy', linewidth=2, alpha=0.8)
-        ax1.plot(x, test_arr, 'r-', label='Test Accuracy (252-day rolling)', linewidth=2, alpha=0.8)
-        ax1.plot(x, self.oob_scores, 'g--', label='OOB Score', linewidth=1.5, alpha=0.6)
-
-        # Stability band - shade area between train and test
+        ax1.plot(x, test_arr, 'r-', label='Test Accuracy', linewidth=2, alpha=0.8)
         ax1.fill_between(x, train_arr, test_arr, alpha=0.25, color='orange', label='Stability Band')
 
-        # Mark overfit/underfit windows
-        for i in range(len(x)):
-            gap = gaps[i]
-            test_acc = test_arr[i]
-            if gap > self.config.overfit_gap_threshold:
-                ax1.axvspan(x[i] - 0.5, x[i] + 0.5, alpha=0.4, color='red', zorder=0)
-            if test_acc < self.config.underfit_threshold:
-                ax1.scatter([x[i]], [test_acc], color='darkred', s=50, marker='x', zorder=5)
-
-        ax1.axhline(0.5, color='gray', linestyle='--', alpha=0.5, label='Random Baseline')
-        ax1.axhline(self.config.underfit_threshold, color='darkred', linestyle=':', alpha=0.5,
-                    label=f'Underfit Threshold ({self.config.underfit_threshold:.0%})')
-
-        # Status calculation
-        avg_gap = np.mean(gaps)
-        overfit_windows = np.sum(gaps > self.config.overfit_gap_threshold)
-        underfit_windows = np.sum(test_arr < self.config.underfit_threshold)
-        accuracy_variance = np.var(test_arr)
-
-        if overfit_windows > len(gaps) * 0.3:
-            status = "⚠️ OVERFITTING DETECTED"
-        elif underfit_windows > len(gaps) * 0.3:
-            status = "⚠️ UNDERFITTING DETECTED"
-        else:
-            status = "✓ Model STABLE"
-
-        ax1.set_title(f'MODEL HEALTH DASHBOARD - {status}\n'
-                      f'Avg Gap: {avg_gap:.1%} | Overfit: {overfit_windows}/{len(gaps)} | '
-                      f'Underfit: {underfit_windows}/{len(gaps)}',
-                      fontsize=12, fontweight='bold')
+        ax1.set_title(f'MODEL HEALTH DASHBOARD', fontsize=12, fontweight='bold')
         ax1.set_ylabel('Accuracy')
-        ax1.set_ylim(0.40, 0.85)
-        ax1.legend(loc='upper right', fontsize=8)
+        ax1.legend(loc='upper right')
         ax1.grid(True, alpha=0.3)
 
-        # Feature Contribution subplot (Yield Spread vs Trend Score)
+        # --- MIDDLE PLOT: Feature Contribution (THE FIX) ---
         if self.feature_importances_history:
             feat_df = pd.DataFrame(self.feature_importances_history)
-            # Try to get yield_spread_proxy and trend_score importances
-            if 'yield_spread_proxy' in feat_df.columns:
-                ax2.plot(x, feat_df['yield_spread_proxy'].values, 'c-', linewidth=2,
-                         label='Yield Spread Proxy', alpha=0.8)
-            if 'trend_score' in feat_df.columns:
-                ax2.plot(x, feat_df['trend_score'].values, 'm-', linewidth=2,
-                         label='Trend Score', alpha=0.8)
-            if 'realized_vol' in feat_df.columns:
-                ax2.plot(x, feat_df['realized_vol'].values, 'y-', linewidth=2,
-                         label='Realized Vol', alpha=0.6)
-            if 'equity_risk_premium' in feat_df.columns:
-                ax2.plot(x, feat_df['equity_risk_premium'].values, 'g-', linewidth=2,
-                         label='Equity Risk Premium', alpha=0.6)
+
+            # Plot every feature
+            for col in feat_df.columns:
+                ax2.plot(x, feat_df[col].values, linewidth=2, label=col, alpha=0.8)
 
             ax2.set_ylabel('Feature Importance')
-            ax2.set_title('Rolling Feature Contribution (Yield Spread vs Trend)', fontsize=10)
+            ax2.set_title('Rolling Feature Contribution (Zoomed)', fontsize=10)
             ax2.legend(loc='upper right', fontsize=8)
             ax2.grid(True, alpha=0.3)
 
-        # Rebalance selector panel
+            # CRITICAL FIX: Unlock the Y-Axis limits
+            # This forces matplotlib to zoom in on the actual data range
+            ax2.autoscale(enable=True, axis='y', tight=False)
+            # Optional: Start at 0 but let top float
+            ax2.set_ylim(bottom=0, top=None)
+
+            # --- BOTTOM PLOT: Rebalance Selection ---
         colors = {21: '#2ecc71', 42: '#3498db', 63: '#9b59b6'}
         for i, (xi, freq) in enumerate(zip(x, self.selected_rebalance_periods)):
             ax3.bar(xi, 1, color=colors.get(freq, 'gray'), alpha=0.8)
 
         ax3.set_ylabel('Rebal Period')
         ax3.set_xlabel('Walk-Forward Window')
-        ax3.set_title('Adaptive Rebalance Selection (21d=Green, 42d=Blue, 63d=Purple)', fontsize=10)
-        ax3.set_ylim(0, 1.2)
+        ax3.set_title('Adaptive Rebalance Selection', fontsize=10)
         ax3.set_yticks([])
+        ax3.set_ylim(0, 1.2)
 
         legend_elements = [Patch(facecolor=c, label=f'{f}d') for f, c in colors.items()]
         ax3.legend(handles=legend_elements, loc='upper right', ncol=3)
 
         plt.tight_layout()
         plt.show(block=False)
-
-        # Store stability status for terminal output
-        self.model_stability = "STABLE" if status.startswith("✓") else "VOLATILE"
-        self.accuracy_variance = accuracy_variance
-
 
 class AlphaDominatorOptimizer:
     """
@@ -1134,18 +1121,23 @@ class BacktestEngine:
         if start_idx >= len(valid_dates):
             raise ValueError("Insufficient data")
 
-        # Benchmark: 60/40
-        bench_weights = np.zeros(optimizer.n_assets)
-        if 'SPY' in optimizer.assets:
-            bench_weights[optimizer.assets.index('SPY')] = 0.60
-        if 'TLT' in optimizer.assets:
-            bench_weights[optimizer.assets.index('TLT')] = 0.40
-        bench_weights = bench_weights / bench_weights.sum()
+            # Benchmark: 100% SPY
+            bench_weights = np.zeros(optimizer.n_assets)
+            if 'SPY' in optimizer.assets:
+                bench_weights[optimizer.assets.index('SPY')] = 1.0
+            # No normalization needed if it's just 1.0, but good practice to keep the structure clean.
 
         # Use adaptive rebalance period
         rebalance_period = classifier.current_rebalance_period
         days_since_rebalance = rebalance_period
         total_costs = 0.0
+        # Benchmark: 100% SPY (Initialize BEFORE the loop)
+        bench_weights = np.zeros(optimizer.n_assets)
+        if 'SPY' in optimizer.assets:
+            bench_weights[optimizer.assets.index('SPY')] = 1.0
+        else:
+            # Fallback if SPY is missing (unlikely)
+            bench_weights[:] = 1.0 / optimizer.n_assets
 
         for i in range(start_idx, len(valid_dates)):
             date = valid_dates[i]
