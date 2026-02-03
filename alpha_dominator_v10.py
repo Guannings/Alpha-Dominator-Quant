@@ -8,8 +8,8 @@ Key innovations:
 1. Information Ratio Filter: Only assets with IR > 0.5 vs SPY are eligible in RISK_ON
 2. Growth Anchor: QQQ + XLK + SMH + VGT minimum 60% weight during RISK_ON
 3. Gold capped at 5% in Bull markets
-4. Regularized Random Forest (max_depth=4, min_samples_leaf=100, ccp_alpha=0.01)
-5. Yield Spread & Equity Risk Premium features (VIX removed)
+4. Regularized Random Forest (max_depth=4, min_samples_leaf=400, ccp_alpha=0.01)
+5. Enhanced feature set: VIX, Vol Momentum, Trend Score, Momentum, Cross-Asset Signals
 6. 10-day EMA probability smoothing (heavy smoothing to prevent regime flickering)
 7. Overfitting health dashboard with stability bands & red alerts
 8. Turnover Brake: Penalty = sum(abs(new - old)) * 500 to curb excessive trading costs
@@ -193,7 +193,7 @@ class DataManager:
         self.information_ratio = self.information_ratio.replace([np.inf, -np.inf], np.nan).ffill().bfill()
 
     def engineer_features(self) -> pd.DataFrame:
-        """Engineer features: RESTORE TREND + USE VIX (No Lag)."""
+        """Engineer features: Enhanced feature set to address underfitting while maintaining regularization."""
         if self.prices is None: raise ValueError("Load data first")
         features = pd.DataFrame(index=self.prices.index)
 
@@ -201,8 +201,10 @@ class DataManager:
         # This reacts INSTANTLY. No more waiting 60 days for an alarm.
         features['realized_vol'] = self.vix / 100.0
 
-        # 2. YIELD SPREAD: KEEP DEAD
-        features['yield_spread_proxy'] = 0.0
+        # 2. VIX REGIME CHANGE: Rate of change of volatility
+        # Helps detect volatility spikes and mean-reversion
+        vix_shifted = self.vix.shift(21).replace(0, np.nan)  # Avoid division by zero
+        features['vol_momentum'] = (self.vix / vix_shifted - 1).clip(-0.5, 0.5)
 
         # 3. EQUITY RISK PREMIUM (Keep)
         spy_erp = 1.0 / (self.prices['SPY'] / self.prices['SPY'].rolling(252).mean())
@@ -212,6 +214,20 @@ class DataManager:
         # This fixes the 'SHAP Flatline' and brings back the returns.
         spy_sma = self.prices['SPY'].rolling(200).mean()
         features['trend_score'] = (self.prices['SPY'] - spy_sma) / spy_sma
+
+        # 5. SHORT-TERM MOMENTUM: 21-day SPY return
+        # Captures recent market direction to help distinguish bull/bear phases
+        features['momentum_21d'] = self.prices['SPY'].pct_change(21).clip(-0.2, 0.2)
+
+        # 6. CROSS-ASSET SIGNAL: QQQ vs SPY relative strength
+        # Tech leadership is a strong regime indicator (fallback to SPY if QQQ unavailable)
+        tech_proxy_prices = self.prices.get('QQQ', self.prices['SPY'])
+        features['qqq_vs_spy'] = (tech_proxy_prices.pct_change(63) - self.prices['SPY'].pct_change(63)).clip(-0.2, 0.2)
+
+        # 7. BOND MARKET SIGNAL: TLT momentum as risk indicator
+        # Flight to quality often precedes equity weakness (fallback to SPY if TLT unavailable)
+        bond_proxy_prices = self.prices.get('TLT', self.prices['SPY'])
+        features['tlt_momentum'] = bond_proxy_prices.pct_change(21).clip(-0.1, 0.1)
 
         features = features.replace([np.inf, -np.inf], np.nan).ffill().bfill()
         self.features = features.dropna()
@@ -259,14 +275,17 @@ class AdaptiveRegimeClassifier:
         self.config = config or StrategyConfig()
 
         # FIXED REGULARIZATION:
-        # We increased leaf size to 400 to prevent memorizing the 2021 Bull Market.
+        # - min_samples_leaf=400: Forces model to group 2022 with 2008 (High Vol = Crash).
+        # - max_depth=4: Slightly deeper for better feature interaction capture without overfitting.
+        # - n_estimators=150: More trees for stable ensemble predictions.
+        # - ccp_alpha=0.01: Stronger cost-complexity pruning to reduce overfitting.
         self.model = RandomForestClassifier(
-            n_estimators=90,
-            max_depth=3,  # Keep simple
-            min_samples_leaf=100,  # CRITICAL FIX: 50 was too small. 400 groups 2022 with 2008.
-            min_samples_split=100,
+            n_estimators=150,
+            max_depth=4,  # Increased from 3 to capture feature interactions
+            min_samples_leaf=400,  # CRITICAL FIX: Increased from 100. 400 groups 2022 with 2008.
+            min_samples_split=200,  # Doubled to require more samples for splits
             max_features='sqrt',
-            ccp_alpha=0.005,
+            ccp_alpha=0.01,  # Increased pruning to prevent overfitting
             bootstrap=True,
             oob_score=True,
             random_state=42,
@@ -1507,7 +1526,7 @@ def main():
 
     # 2. Model Training
     print("[2/6] Training regularized regime classifier...")
-    print(f"      Regularization: max_depth=3, min_samples_leaf=100, max_features=sqrt, ccp_alpha=0.005")
+    print(f"      Regularization: max_depth=4, min_samples_leaf=400, max_features=sqrt, ccp_alpha=0.01")
     print(f"      Probability Smoothing: {config.prob_ema_span}-day EMA")
     classifier = AdaptiveRegimeClassifier(config)
     ml_probs = classifier.walk_forward_train(features, returns['SPY'])
