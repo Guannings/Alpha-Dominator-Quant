@@ -6,12 +6,14 @@ Regime-Adaptive Mean-Variance Optimization Strategy - Version 10.0
 
 Key innovations:
 1. Information Ratio Filter: Only assets with IR > 0.5 vs SPY are eligible in RISK_ON
-2. Growth Anchor: QQQ + XLK minimum 50% weight during RISK_ON
+2. Growth Anchor: QQQ + XLK + SMH + VGT minimum 60% weight during RISK_ON
 3. Gold capped at 5% in Bull markets
-4. Regularized Random Forest (max_depth=4, ccp_alpha=0.01)
+4. Regularized Random Forest (max_depth=3, min_samples_leaf=150, ccp_alpha=0.015)
 5. Yield Spread & Equity Risk Premium features (VIX removed)
-6. 3-day EMA probability smoothing
+6. 10-day EMA probability smoothing (heavy smoothing to prevent regime flickering)
 7. Overfitting health dashboard with stability bands & red alerts
+8. Turnover Brake: Penalty = sum(abs(new - old)) * 500 to curb excessive trading costs
+9. High-Alpha Universe: SMH + VGT added, VEA + XLP + VNQ removed
 
 Author: Quantitative Research
 Version: 10.0.0
@@ -59,12 +61,13 @@ class StrategyConfig:
 
     max_single_weight: float = 0.35
     gold_cap_risk_on: float = 0.05  # 5% max gold in bull (The Gold Cap)
-    min_growth_anchor: float = 0.50  # 50% min QQQ+XLK in RISK_ON (Growth Anchor)
+    min_growth_anchor: float = 0.60  # 60% min QQQ+XLK+SMH+VGT in RISK_ON (Growth Anchor)
     ir_threshold: float = 0.5  # IR > 0.5 required for eligibility (Velvet Rope)
 
     entropy_lambda: float = 0.15  # Shannon Entropy coefficient
     min_effective_n: float = 3.0
     growth_anchor_penalty: float = 50.0  # High-priority penalty multiplier for Growth Anchor constraint
+    turnover_penalty: float = 500.0  # The Turnover Brake penalty multiplier
 
     # Adaptive rebalancing candidates
     rebalance_candidates: Tuple[int, ...] = (21, 42, 63)
@@ -77,7 +80,10 @@ class StrategyConfig:
     underfit_threshold: float = 0.51  # Below 51% = underfitting alert
 
     # EMA smoothing for ML probabilities
-    prob_ema_span: int = 3  # 3-day EMA
+    prob_ema_span: int = 10  # 10-day EMA for heavy smoothing
+
+    # Floating point tolerance for constraint checks
+    constraint_tolerance: float = 0.001
 
     # UI colors
     alert_background_color: str = '#FFCCCC'  # Light Red for health dashboard alerts
@@ -86,10 +92,10 @@ class StrategyConfig:
 class DataManager:
     """Data acquisition with Information Ratio and macro feature calculation."""
 
-    EQUITIES = ['SPY', 'QQQ', 'IWM', 'VEA', 'XLK', 'XLE', 'XLP']
+    EQUITIES = ['SPY', 'QQQ', 'IWM', 'XLK', 'XLE', 'SMH', 'VGT']
     FIXED_INCOME = ['TLT', 'IEF', 'SHY']
-    ALTERNATIVES = ['GLD', 'VNQ']
-    GROWTH_ANCHORS = ['QQQ', 'XLK']  # The Growth Anchor assets
+    ALTERNATIVES = ['GLD']
+    GROWTH_ANCHORS = ['QQQ', 'XLK', 'SMH', 'VGT']  # The Growth Anchor assets
     VIX_TICKER = '^VIX'
 
     def __init__(self, start_date: str = '2007-01-01', end_date: str = None,
@@ -303,10 +309,10 @@ class AdaptiveRegimeClassifier:
     Regularized Random Forest classifier with adaptive rebalancing selection.
 
     INTRINSIC REGULARIZATION (Anti-Overfit Module):
-    - max_depth=4: Shallow trees for macro-structural signals
-    - min_samples_leaf=100: Forces generalization
+    - max_depth=3: Shallow trees for macro-structural signals
+    - min_samples_leaf=150: Forces generalization
     - max_features='log2': Feature subsampling
-    - ccp_alpha=0.01: Cost Complexity Pruning
+    - ccp_alpha=0.015: Aggressive pruning
 
     During walk-forward training, tests multiple rebalance frequencies
     and selects the one with highest Information Ratio.
@@ -318,11 +324,11 @@ class AdaptiveRegimeClassifier:
         # HARD-CODED regularization per Alpha Dominator spec
         self.model = RandomForestClassifier(
             n_estimators=90,
-            max_depth=4,  # Shallow for macro signals
-            min_samples_leaf=100,  # Force generalization
+            max_depth=3,  # Shallow for macro signals
+            min_samples_leaf=150,  # Force generalization (stronger evidence)
             min_samples_split=200,  # Conservative splits
             max_features='log2',  # Feature subsampling
-            ccp_alpha=0.01,  # Cost Complexity Pruning
+            ccp_alpha=0.015,  # Aggressive pruning
             bootstrap=True,
             oob_score=True,
             random_state=42,
@@ -635,10 +641,11 @@ class AlphaDominatorOptimizer:
 
     RISK_ON Constraints per Alpha Dominator Constitution:
     - IR Filter (Velvet Rope): Only assets with IR > 0.5 vs SPY are eligible
-    - Growth Anchor: QQQ + XLK minimum 50% combined weight
+    - Growth Anchor: QQQ + XLK + SMH + VGT minimum 60% combined weight
     - Gold Cap: GLD capped at 5% maximum
     - Kill Sharpe/Volatility Traps: No vol penalty on growth leaders
     - Shannon Entropy: Maximize IR_Score + (0.15 × Shannon Entropy)
+    - Turnover Brake: Penalty = sum(abs(new - old)) * turnover_penalty (configurable)
     """
 
     def __init__(
@@ -657,11 +664,14 @@ class AlphaDominatorOptimizer:
         self.bonds_cash_idx = [assets.index(a) for a in asset_categories.get('bonds_cash', []) if a in assets]
         self.safe_haven_idx = [assets.index(a) for a in asset_categories.get('safe_haven', []) if a in assets]
 
-        # GROWTH ANCHOR: QQQ + XLK indices
+        # GROWTH ANCHOR: Use DataManager.GROWTH_ANCHORS for consistency
         self.growth_anchor_idx = [
-            assets.index(a) for a in ['QQQ', 'XLK']
+            assets.index(a) for a in DataManager.GROWTH_ANCHORS
             if a in assets
         ]
+
+        # Current weights for turnover penalty (None = first optimization, skip penalty)
+        self.current_weights: Optional[np.ndarray] = None
 
         logger.info(f"AlphaDominator: {self.n_assets} assets, growth_anchor_idx={self.growth_anchor_idx}, "
                     f"gold_idx={self.gold_idx}")
@@ -676,7 +686,7 @@ class AlphaDominatorOptimizer:
             above_sma: pd.Series
     ) -> Tuple[np.ndarray, bool, str, Dict]:
         """
-        Optimize with IR filter, Growth Anchor, and Shannon Entropy objective.
+        Optimize with IR filter, Growth Anchor, Shannon Entropy objective, and Turnover Brake.
         """
         mean_ret = returns.mean() * 252
         cov = returns.cov() * 252
@@ -689,11 +699,14 @@ class AlphaDominatorOptimizer:
 
         if n_eligible == 0:
             logger.warning("No eligible assets, using fallback")
-            return self._safe_fallback(regime), False, "fallback", {}
+            weights = self._safe_fallback(regime)
+            self.current_weights = weights.copy()
+            return weights, False, "fallback", {}
 
         if n_eligible == 1:
             weights = np.zeros(self.n_assets)
             weights[eligible_mask] = 1.0
+            self.current_weights = weights.copy()
             return weights, True, "single", self._calculate_diagnostics(weights, cov, information_ratio)
 
         # Build objective and constraints based on regime
@@ -715,9 +728,11 @@ class AlphaDominatorOptimizer:
             weights = np.maximum(result.x, 0)
             weights = weights / weights.sum()
             diagnostics = self._calculate_diagnostics(weights, cov, information_ratio)
+            self.current_weights = weights.copy()
             return weights, True, method, diagnostics
         else:
             weights = self._equal_eligible(eligible_mask)
+            self.current_weights = weights.copy()
             return weights, False, "equal_fallback", self._calculate_diagnostics(weights, cov, information_ratio)
 
     def _get_eligible_mask(
@@ -794,17 +809,19 @@ class AlphaDominatorOptimizer:
             eligible_mask: np.ndarray
     ) -> callable:
         """
-        RISK_ON Objective: Maximize IR_Score + (0.15 × Shannon Entropy)
+        RISK_ON Objective: Maximize IR_Score + (0.15 × Shannon Entropy) - Turnover Penalty
 
         NO SHARPE TRAP - no volatility penalty on growth leaders.
-        GROWTH ANCHOR - soft penalty if QQQ+XLK < 50%
+        GROWTH ANCHOR - soft penalty if Growth Anchors < 60%
+        TURNOVER BRAKE - penalty = sum(abs(new - old)) * turnover_penalty (configurable)
         """
         aligned_ir = information_ratio.reindex(pd.Index(self.assets)).fillna(0).values
         mean_ret_arr = mean_ret.values
         cov_arr = cov.values
         entropy_lambda = self.config.entropy_lambda  # 0.15
-        min_growth_anchor = self.config.min_growth_anchor  # 50%
+        min_growth_anchor = self.config.min_growth_anchor  # 60%
         growth_anchor_penalty_mult = self.config.growth_anchor_penalty  # High-priority penalty multiplier
+        turnover_penalty_mult = self.config.turnover_penalty  # The Turnover Brake
 
         # Scale IR scores to positive range for objective
         ir_scaled = np.where(aligned_ir > 0, aligned_ir, 0)
@@ -815,6 +832,8 @@ class AlphaDominatorOptimizer:
         boosted_returns = mean_ret_arr * (1.0 + 2.0 * ir_scaled)
 
         growth_anchor_idx = self.growth_anchor_idx
+        # Use zeros for first optimization to skip turnover penalty
+        old_weights = self.current_weights if self.current_weights is not None else np.zeros(self.n_assets)
 
         def objective(w):
             # IR Score component (no vol penalty - Kill Sharpe Trap)
@@ -827,12 +846,16 @@ class AlphaDominatorOptimizer:
             max_entropy = np.log(n_eligible) if n_eligible > 1 else 1
             norm_entropy = entropy / max_entropy
 
-            # GROWTH ANCHOR: High-priority soft penalty if QQQ+XLK < 50%
+            # GROWTH ANCHOR: High-priority soft penalty if Growth Anchors < 60%
             growth_weight = sum(w[idx] for idx in growth_anchor_idx)
             growth_penalty = max(0, min_growth_anchor - growth_weight) ** 2 * growth_anchor_penalty_mult
 
+            # TURNOVER BRAKE: Penalty for excessive trading (skipped on first call)
+            turnover = np.sum(np.abs(w - old_weights))
+            turnover_penalty = turnover * turnover_penalty_mult
+
             # Objective: maximize (IR_Score + 0.15*Entropy) - penalties
-            return -ir_score - entropy_lambda * norm_entropy + growth_penalty
+            return -ir_score - entropy_lambda * norm_entropy + growth_penalty + turnover_penalty
 
         return objective
 
@@ -842,10 +865,13 @@ class AlphaDominatorOptimizer:
             cov: pd.DataFrame,
             eligible_mask: np.ndarray
     ) -> callable:
-        """RISK_REDUCED: Maximize Sharpe."""
+        """RISK_REDUCED: Maximize Sharpe with Turnover Brake."""
         mean_ret_arr = mean_ret.values
         cov_arr = cov.values
         rf = self.config.risk_free_rate
+        turnover_penalty_mult = self.config.turnover_penalty  # The Turnover Brake
+        # Use zeros for first optimization to skip turnover penalty
+        old_weights = self.current_weights if self.current_weights is not None else np.zeros(self.n_assets)
 
         def objective(w):
             port_ret = np.dot(w, mean_ret_arr)
@@ -856,7 +882,12 @@ class AlphaDominatorOptimizer:
                 return 1e6
 
             sharpe = (port_ret - rf) / port_vol
-            return -sharpe
+
+            # TURNOVER BRAKE: Penalty for excessive trading (skipped on first call)
+            turnover = np.sum(np.abs(w - old_weights))
+            turnover_penalty = turnover * turnover_penalty_mult
+
+            return -sharpe + turnover_penalty
 
         return objective
 
@@ -865,11 +896,20 @@ class AlphaDominatorOptimizer:
             cov: pd.DataFrame,
             eligible_mask: np.ndarray
     ) -> callable:
-        """DEFENSIVE: Minimum variance."""
+        """DEFENSIVE: Minimum variance with Turnover Brake."""
         cov_arr = cov.values
+        turnover_penalty_mult = self.config.turnover_penalty  # The Turnover Brake
+        # Use zeros for first optimization to skip turnover penalty
+        old_weights = self.current_weights if self.current_weights is not None else np.zeros(self.n_assets)
 
         def objective(w):
-            return np.dot(w.T, np.dot(cov_arr, w))
+            variance = np.dot(w.T, np.dot(cov_arr, w))
+
+            # TURNOVER BRAKE: Penalty for excessive trading (skipped on first call)
+            turnover = np.sum(np.abs(w - old_weights))
+            turnover_penalty = turnover * turnover_penalty_mult
+
+            return variance + turnover_penalty
 
         return objective
 
@@ -1518,7 +1558,8 @@ def main():
 
     # 2. Model Training
     print("[2/6] Training regularized regime classifier...")
-    print(f"      Regularization: max_depth=4, min_samples_leaf=100, ccp_alpha=0.01")
+    print(f"      Regularization: max_depth=3, min_samples_leaf=150, ccp_alpha=0.015")
+    print(f"      Probability Smoothing: {config.prob_ema_span}-day EMA")
     classifier = AdaptiveRegimeClassifier(config)
     ml_probs = classifier.walk_forward_train(features, returns['SPY'])
     print()
@@ -1526,8 +1567,9 @@ def main():
     # 3. Optimizer Initialization
     print("[3/6] Initializing Alpha Dominator optimizer...")
     print(f"      IR Threshold: {config.ir_threshold}")
-    print(f"      Growth Anchor (QQQ+XLK min): {config.min_growth_anchor:.0%}")
+    print(f"      Growth Anchor (QQQ+XLK+SMH+VGT min): {config.min_growth_anchor:.0%}")
     print(f"      Gold Cap: {config.gold_cap_risk_on:.0%}")
+    print(f"      Turnover Brake: 500 penalty multiplier")
     optimizer = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
 
     # 4. Backtest Execution
@@ -1584,14 +1626,14 @@ def main():
         print(f"DIVERSITY SCORE (Effective N): {eff_n:.2f} {status}")
         print(f"Target: {config.min_effective_n:.1f}+")
 
-        # Growth Anchor status
+        # Growth Anchor status (with tolerance)
         growth_weight = diag.get('growth_anchor_weight', 0)
-        growth_status = "✓ MET" if growth_weight >= config.min_growth_anchor else "✗ BELOW"
-        print(f"GROWTH ANCHOR (QQQ+XLK): {growth_weight:.1%} {growth_status} (Min: {config.min_growth_anchor:.0%})")
+        growth_status = "✓ MET" if growth_weight >= (config.min_growth_anchor - config.constraint_tolerance) else "✗ BELOW"
+        print(f"GROWTH ANCHOR (QQQ+XLK+SMH+VGT): {growth_weight:.1%} {growth_status} (Min: {config.min_growth_anchor:.0%})")
 
-        # Gold Cap status
+        # Gold Cap status (with tolerance)
         gold_weight = diag.get('gold_weight', 0)
-        gold_status = "✓ OK" if gold_weight <= config.gold_cap_risk_on else "✗ OVER"
+        gold_status = "✓ OK" if gold_weight <= (config.gold_cap_risk_on + config.constraint_tolerance) else "✗ OVER"
         print(f"GOLD CAP: {gold_weight:.1%} {gold_status} (Max: {config.gold_cap_risk_on:.0%})")
     print()
 
