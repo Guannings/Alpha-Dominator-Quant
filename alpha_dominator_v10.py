@@ -84,6 +84,10 @@ class StrategyConfig:
 
     # Floating point tolerance for constraint checks
     constraint_tolerance: float = 0.001
+    
+    # Anxiety Veto thresholds (for elevated VIX conditions)
+    anxiety_vix_threshold: float = 0.18  # VIX level above which anxiety veto applies
+    anxiety_ml_prob_threshold: float = 0.75  # Required ML probability when VIX is elevated
 
     # UI colors
     alert_background_color: str = '#FFCCCC'  # Light Red for health dashboard alerts
@@ -252,6 +256,9 @@ class AdaptiveRegimeClassifier:
         self.feature_importances_history = []
 
         self.current_rebalance_period = 42
+        
+        # Model stability tracking
+        self.model_stability = 'UNKNOWN'
 
     def walk_forward_train(self, features, returns, initial_train_years=5, step_months=12):
         logger.info("Starting adaptive walk-forward training (CONSENSUS ENGINE)")
@@ -338,6 +345,16 @@ class AdaptiveRegimeClassifier:
             self.shap_values = np.vstack(shap_values_list)
             self.shap_features = pd.concat(shap_features_list)
 
+        # Calculate Model Stability based on test_scores standard deviation
+        if self.test_scores:
+            test_scores_std = np.std(self.test_scores)
+            if test_scores_std < 0.05:
+                self.model_stability = 'HIGH'
+            elif test_scores_std < 0.10:
+                self.model_stability = 'MODERATE'
+            else:
+                self.model_stability = 'LOW'
+
         return probabilities.ffill().ewm(span=10).mean()
 
     def get_regime(self, ml_prob: float, spy_above_sma: bool, current_vol: float,
@@ -348,17 +365,24 @@ class AdaptiveRegimeClassifier:
         DEFENSIVE if:
         (1) spy_above_sma is False, OR
         (2) current_vol > 0.35, OR
-        (3) tlt_momentum < -0.05 AND equity_risk_premium < 0 (Rate Shock Guard)
+        (3) current_vol > anxiety_vix_threshold AND ml_prob < anxiety_ml_prob_threshold (Anxiety Veto), OR
+        (4) tlt_momentum < -0.05 AND equity_risk_premium < 0 (Rate Shock Guard)
         """
         # 1. HARD VETO
         if not spy_above_sma or current_vol > 0.35:
             return 'DEFENSIVE'
         
-        # 2. RATE SHOCK GUARD (The 2022 Shield)
+        # 2. ANXIETY VETO - When VIX is elevated, require higher conviction
+        anxiety_vix_threshold = self.config.anxiety_vix_threshold
+        anxiety_ml_prob_threshold = self.config.anxiety_ml_prob_threshold
+        if current_vol > anxiety_vix_threshold and ml_prob < anxiety_ml_prob_threshold:
+            return 'DEFENSIVE'
+        
+        # 3. RATE SHOCK GUARD (The 2022 Shield)
         if tlt_momentum < -0.05 and equity_risk_premium < 0:
             return 'DEFENSIVE'
 
-        # 3. CONSENSUS PROBABILITY
+        # 4. CONSENSUS PROBABILITY
         if ml_prob > 0.55:
             return 'RISK_ON'
 
@@ -1482,7 +1506,14 @@ def main():
         sniper_status = "✓ GOOD" if sniper_score >= sniper_threshold else "⚠ WARNING"
         print(f"SNIPER SCORE (Precision): {sniper_score:.3f} {sniper_status}")
         if sniper_score < sniper_threshold:
-            print(f"  ⚠ WARNING: Sniper Score < {sniper_threshold} indicates potential overfitting. Review model parameters.")
+            print()
+            print("=" * 80)
+            print("⚠⚠⚠ WARNING: MODEL EXHIBITS SIGNS OF OVERFITTING ⚠⚠⚠")
+            print("=" * 80)
+            print(f"Sniper Score ({sniper_score:.3f}) < {sniper_threshold}")
+            print("The model exhibits signs of overfitting or insufficient signal-to-noise ratio.")
+            print("Review model parameters and consider adjusting feature selection.")
+            print("=" * 80)
     else:
         print("SNIPER SCORE (Precision): N/A (no buy signals)")
 
