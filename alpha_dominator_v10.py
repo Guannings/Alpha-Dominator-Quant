@@ -348,9 +348,9 @@ class AdaptiveRegimeClassifier:
         # Calculate Model Stability based on test_scores standard deviation
         if self.test_scores:
             test_scores_std = np.std(self.test_scores)
-            if test_scores_std < 0.05:
+            if test_scores_std < 0.10:
                 self.model_stability = 'HIGH'
-            elif test_scores_std < 0.10:
+            elif test_scores_std < 0.15:
                 self.model_stability = 'MODERATE'
             else:
                 self.model_stability = 'LOW'
@@ -379,7 +379,7 @@ class AdaptiveRegimeClassifier:
             return 'DEFENSIVE'
         
         # 3. RATE SHOCK GUARD (The 2022 Shield)
-        if tlt_momentum < -0.05 and equity_risk_premium < 0:
+        if tlt_momentum < -0.03 and equity_risk_premium < 0:
             return 'DEFENSIVE'
 
         # 4. CONSENSUS PROBABILITY
