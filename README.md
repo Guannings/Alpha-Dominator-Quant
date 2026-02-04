@@ -1,58 +1,56 @@
-# ##Strategy: The Alpha Dominator (v10.0)##
-##Overview##
-The Alpha Dominator is a regime-adaptive, multi-asset quantitative strategy designed to structurally outperform the S&P 500 (SPY) in both CAGR and Sharpe Ratio. It achieves this by aggressively focusing capital on high-conviction structural growth leaders during bull markets while utilizing regularized machine learning to detect regime shifts.
+# ⚠️ HARDWARE WARNING: HIGH COMPUTATIONAL LOAD
+**PLEASE READ BEFORE RUNNING:** 
 
-⚖️ The Quantitative Constitution (Mandatory Logic)
-To prevent "Gilded Cowardice" (hiding in safe-havens during growth periods) and "Robotic Blocks" (50/50 splits), the following rules are non-negotiable:
+This script is currently **configured to run 1,000,000 (1 Million) Monte Carlo simulations.** This is an extreme stress test intended for high-performance workstations.
 
-Kill the Sharpe Trap: In RISK_ON (Bull) regimes, never penalize assets like QQQ or XLK for high volatility. High-growth assets are inherently volatile; maximizing Sharpe in a bull market is a failure state.
+**1. System Requirements:**
 
-Kill the Volatility Trap: Low-volatility assets (e.g., SHY, Cash) are forbidden from receiving high allocations in bull markets just because their risk-adjusted scores appear smooth.
+Minimum 32GB RAM and a multi-core processor (e.g., Ryzen 7 / Core i7 or better).
 
-The Velvet Rope (IR Filter): Asset eligibility in RISK_ON requires a 6-month Information Ratio (IR) > 0.5 against SPY.
+**2. Memory Intensity:**
 
-Formula: (Asset_Return - SPY_Return) / Tracking_Error.
+Each simulation path generates and stores thousands of data points for the 5-year projection period, leading to a massive memory footprint.
 
-The Growth Anchor: Combined weight of QQQ + XLK must be Minimum 50% during RISK_ON.
+**3. Risk:** 
 
-The Gold Cap: Gold (GLD) is a hedge, not a driver. Total weight is capped at 5.0% in RISK_ON.
+Running this on a standard office laptop or non-gaming PC (8GB/16GB RAM) will likely cause a Memory Overflow (OOM), resulting in a system freeze or crash.
 
-Shannon Entropy Diversification: Use Shannon Entropy to ensure a professional "waterfall" weight distribution rather than robotic equal-weighted blocks.
+**4. Execution Time:** 
 
-🤖 Machine Learning Framework
-The strategy utilizes a Regularized Random Forest to predict the probability of a positive forward 21-day return.
+At 1,000,000 iterations, the calculation of the probability of loss, confidence intervals, and ending value distributions will take several minutes even on high-end hardware.
 
-Intrinsic Regularization: To prevent overfitting, the model is hard-coded with max_depth=4, min_samples_leaf=100, and ccp_alpha=0.01.
+## Recommendation for Standard Users: ##
 
-Macro Features: VIX is dropped as a lagging indicator. The model uses the Yield Spread Proxy (3m momentum of TLT/SHY) and Equity Risk Premium Proxy (Earnings Yield - Treasury Yield).
+If you were to run the script after carefully reading and agreeing with the "⚠️ Disclaimer and Terms of Use" below, **before running,** open alpha_dominator_v10.py and **find the configuration line: n_simulations = 1000000** (inside the main function or StrategyConfig) and **change it to 10,000** or a smaller number of your choice.
 
-Signal Processing: Apply a 3-day EMA to ml_probs to eliminate high-turnover regime flickering.
+====================================================================================
+# **⚠️ Disclaimer and Terms of Use**
+**1. Educational Purpose Only**
 
-⚙️ Operational Protocols
-Adaptive Rebalancing: The system automatically selects the optimal rebalance period (21, 42, or 63 days) based on the training window's highest Information Ratio.
+This software is for educational and research purposes only and was built as a personal project by a student at National Chengchi University (NCCU). It is not intended to be a source of financial advice, and the authors are not registered financial advisors. The algorithms, simulations, and optimization techniques implemented herein—including Consensus Machine Learning, Shannon Entropy, and Geometric Brownian Motion—are demonstrations of theoretical concepts and should not be construed as a recommendation to buy, sell, or hold any specific security or asset class.
 
-Transaction Modeling: Costs are based on Turnover (sum(abs(new_weights - old_weights))).
+**2. No Financial Advice**
 
-Monte Carlo Standard: Use Daily Risk-Free Rate conversions for all future projections.
+Nothing in this repository constitutes professional financial, legal, or tax advice. Investment decisions should be made based on your own research and consultation with a qualified financial professional. The strategies modeled in this software—specifically the 60% Growth Anchor and IR Filter—may not be suitable for your specific financial situation, risk tolerance, or investment goals.
 
-📊 Health Dashboard Specifications
-The plot_validation_curves method must serve as a professional health monitor:
+**3. Risk of Loss**
 
-Rolling Accuracy: Display a 252-day rolling test accuracy line.
+All investments involve risk, including the possible loss of principal.
 
-Stability Band: Shade the area between Train and Test accuracy.
+Past Performance: Historical returns (such as the 19.5% CAGR) and volatility data used in these simulations are not indicative of future results.
 
-Overfitting Warning: If the accuracy gap exceeds 12% or test accuracy falls below 51%, the background must turn Light Red.
+Simulation Limitations: Monte Carlo simulations are probabilistic models based on assumptions (such as constant drift and volatility) that may not reflect real-world market conditions, black swan events, or liquidity crises.
 
-🛠 Instructions for Copilot Agent
-When working on alpha_dominator_v10.py, follow these implementation tasks:
+Model Vetoes: While the Rate Shock Guard and Anxiety Veto are designed to mitigate losses, they are based on historical thresholds that may fail in unprecedented macro-economic environments.
 
-Integrate IR Logic: Ensure DataManager correctly calculates Tracking Error and Information Ratio for the "Velvet Rope" filter.
+Market Data: Data fetched from third-party APIs (e.g., Yahoo Finance) may be delayed, inaccurate, or incomplete.
 
-Complete Boilerplate: Finish the MonteCarloSimulator.plot_distribution and main() methods.
+**4. Hardware and Computation Liability**
 
-Enforce Optimization Constraints: In AlphaDominatorOptimizer, implement the 50% Growth Anchor floor and 5% Gold cap as high-priority soft penalties in the objective function.
+The author assumes no responsibility for hardware failure, system instability, or data loss resulting from the execution of the 1,000,000 Monte Carlo simulations. Execution of this code at the configured scale is a high-stress computational event that should only be performed on hardware meeting the minimum specified 32GB RAM requirements.
 
-De-indent main(): Ensure the main() execution block is standalone at the bottom of the file.
+**5. "AS-IS" SOFTWARE WARRANTY**
 
-Terminal Output: Ensure the Final Allocation Receipt prints Asset, Weight, IR_Score, Trend Status, and Risk Contribution in a clean table format.
+**THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.**
+
+**BY USING THIS SOFTWARE, YOU AGREE TO ASSUME ALL RISKS ASSOCIATED WITH YOUR INVESTMENT DECISIONS AND HARDWARE USAGE, RELEASING THE AUTHOR (KUANMIN KUO) FROM ANY LIABILITY REGARDING YOUR FINANCIAL OUTCOMES OR SYSTEM INTEGRITY.**
