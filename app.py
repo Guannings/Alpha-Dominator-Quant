@@ -1815,10 +1815,10 @@ Nothing in this repository constitutes professional financial, legal, or tax adv
 
 ### 3. Risk of Loss
 All investments involve risk, including the possible loss of principal.
-* **a. Past Performance:** Historical returns (such as the 19.5% CAGR) and volatility data used in these simulations are not indicative of future results.
-* **b. Simulation Limitations:** Monte Carlo simulations are probabilistic models based on assumptions (such as constant drift and volatility) that may not reflect real-world market conditions, black swan events, or liquidity crises.
-* **c. Model Vetoes:** While the Rate Shock Guard and Anxiety Veto are designed to mitigate losses, they are based on historical thresholds that may fail in unprecedented macro-economic environments.
-* **d. Market Data:** Data fetched from third-party APIs (e.g., Yahoo Finance) may be delayed, inaccurate, or incomplete.
+  **a. Past Performance:** Historical returns (such as the 19.5% CAGR) and volatility data used in these simulations are not indicative of future results.
+  **b. Simulation Limitations:** Monte Carlo simulations are probabilistic models based on assumptions (such as constant drift and volatility) that may not reflect real-world market conditions, black swan events, or liquidity crises.
+  **c. Model Vetoes:** While the Rate Shock Guard and Anxiety Veto are designed to mitigate losses, they are based on historical thresholds that may fail in unprecedented macro-economic environments.
+  **d. Market Data:** Data fetched from third-party APIs (e.g., Yahoo Finance) may be delayed, inaccurate, or incomplete.
 
 ### 4. Hardware and Computation Liability
 The author assumes no responsibility for hardware failure, system instability, or data loss resulting from the execution of the 1,000,000 Monte Carlo simulations. Execution of this code at the configured scale is a high-stress computational event that should only be performed on hardware meeting the minimum specified requirements.
