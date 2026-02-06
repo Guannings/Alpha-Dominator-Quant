@@ -121,11 +121,11 @@ The author assumes no responsibility for hardware failure, system instability, o
 ====================================================================================
 # **Regime-Adaptive Mean-Variance Optimization & Multi-Model Consensus Engine**
 
-This documentation provides an exhaustive, sequential breakdown of the Alpha Dominator v10.0, an institutional-grade algorithmic trading strategy engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a "Safety-First" approach to high-alpha asset management.
+This documentation provides an exhaustive, sequential breakdown of the Alpha Dominator v10.0, an robust framework algorithmic trading strategy engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a "Safety-First" approach to high-alpha asset management.
 
 **I. Institutional Configuration (StrategyConfig)**
 
-The Institutional Configuration (StrategyConfig) acts as the "Constitution" for the Alpha Dominator v10.0, establishing the rigorous mathematical boundaries required for institutional-grade portfolio management. It serves as a centralized control center, ensuring that every calculation—from signal detection to trade execution—adheres to predefined risk and performance standards.
+The Institutional Configuration (StrategyConfig) acts as the "Constitution" for the Alpha Dominator v10.0, establishing the rigorous mathematical boundaries required for robust framework portfolio management. It serves as a centralized control center, ensuring that every calculation—from signal detection to trade execution—adheres to predefined risk and performance standards.
 
 **1. Conviction & Entry Thresholds**
 
@@ -151,7 +151,7 @@ a. min_growth_anchor (60%): During bullish cycles, the configuration mandates a 
 
 b. gold_cap_risk_on (5%): Even when bullish, the system caps defensive assets like Gold at 5% to prevent "drag" on the portfolio's performance during strong equity rallies.
 
-c. max_single_weight (35%): No single asset can exceed 35% of the total portfolio, enforcing institutional-grade concentration limits.
+c. max_single_weight (35%): No single asset can exceed 35% of the total portfolio, enforcing robust framework concentration limits.
 
 **4. Cost and Execution Management**
 
@@ -173,7 +173,7 @@ b. anxiety_ml_prob_threshold (0.75): In an Anxious state, the conviction require
 
 **II. Data Orchestration & Feature Engineering (DataManager)**
 
-The Data Orchestration (DataManager) layer is the engine responsible for the ingestion, cleaning, and complex transformation of raw market data into institutional-grade features. By moving beyond simple price action, this section builds a high-dimensional view of the market that captures the interplay between momentum, volatility, and macro-economic risk.
+The Data Orchestration (DataManager) layer is the engine responsible for the ingestion, cleaning, and complex transformation of raw market data into robust framework features. By moving beyond simple price action, this section builds a high-dimensional view of the market that captures the interplay between momentum, volatility, and macro-economic risk.
 
 **1. Data Acquisition and Universe Selection**
 
@@ -321,7 +321,7 @@ c. Result: This creates a smoother risk profile, ensuring the portfolio maintain
 
 **4. The Turnover Brake (Penalty for Excess Trading)**
 
-Institutional-grade portfolios must account for the high cost of slippage and commissions. The Alpha Dominator addresses this through a Turnover Brake.
+robust framework portfolios must account for the high cost of slippage and commissions. The Alpha Dominator addresses this through a Turnover Brake.
 
 a. The Penalty: The optimizer calculates the "Manhattan Distance" between the new proposed weights and the current existing weights (∑∣new_w−old_w∣).
 
@@ -341,7 +341,7 @@ b. Defensive: Switches to a Minimum Variance objective, ignoring returns entirel
 
 **VI. Backtest Execution & Performance Analytics (BacktestEngine)**
 
-The Backtest Execution & Performance Analytics (BacktestEngine) is the final investigative layer of the strategy, providing a rigorous, out-of-sample validation of the system's decision-making integrity over a 15-year historical horizon. This engine does not merely calculate returns; it audit-trails every regime shift, rebalance decision, and transaction cost to ensure the strategy's theoretical edge translates into institutional-grade performance.
+The Backtest Execution & Performance Analytics (BacktestEngine) is the final investigative layer of the strategy, providing a rigorous, out-of-sample validation of the system's decision-making integrity over a 15-year historical horizon. This engine does not merely calculate returns; it audit-trails every regime shift, rebalance decision, and transaction cost to ensure the strategy's theoretical edge translates into robust framework performance.
 
 **1. The Mechanics of Adaptive Rebalancing**
 
@@ -391,7 +391,7 @@ By combining these metrics, the BacktestEngine proves that the Alpha Dominator i
 
 **VII. Tail-Risk Stress Testing (MonteCarloSimulator)**
 
-The Monte Carlo Simulator serves as the final, rigorous validation layer of the Alpha Dominator framework. It transitions the analysis from historical backtesting (what did happen) to stochastic modeling (what could happen), providing an institutional-grade assessment of tail risk and expected future performance.
+The Monte Carlo Simulator serves as the final, rigorous validation layer of the Alpha Dominator framework. It transitions the analysis from historical backtesting (what did happen) to stochastic modeling (what could happen), providing an robust framework assessment of tail risk and expected future performance.
 
 **1. Stochastic Engine: Geometric Brownian Motion (GBM)**
 
