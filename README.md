@@ -5,8 +5,19 @@ This project is fully containerized to ensure reproducibility of the financial l
 **It runs consistently on any operating system (Windows, macOS, Linux) with Docker installed.**
 
 ### 1. Prerequisites
-* **Docker Desktop:** Installed and running. ([Download here if you don't have one](https://www.docker.com/products/docker-desktop/))
-* **Git:** To clone the repository.
+**a. Docker Desktop:** 
+
+Installed and running. ([Download here if you don't have one](https://www.docker.com/products/docker-desktop/))
+  
+**b. Git:** To clone the repository.
+
+Check if you have it by typing `git --version` in your terminal. If not installed:
+
+* **macOS:** Open Terminal and type `xcode-select --install` or download from [git-scm.com](https://git-scm.com/download/mac).
+  
+* **Windows:** Download and install **Git for Windows** from [gitforwindows.org](https://gitforwindows.org/).
+  
+* **Linux:** Run `sudo apt-get install git` (Debian/Ubuntu).
 
 ### 2. Installation
 Open your terminal (or Command Prompt) and run the following commands to download the code and build the environment:
