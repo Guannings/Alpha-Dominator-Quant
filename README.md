@@ -1,6 +1,6 @@
 ## 🚀 How to Run Using Docker Provided Here
 
-This project is fully containerized to ensure reproducibility of the financial logic and machine learning environment. 
+This project is fully containerized to ensure reproducibility of the financial logic and Machine Learning environment. 
 
 **It runs consistently on any operating system (Windows, macOS, Linux) with Docker installed.**
 
