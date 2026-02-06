@@ -58,7 +58,7 @@ Access at: Local URL
 
 **Port Conflicts:**
 
-**If port 8501 or 1546 are both busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
+**If port 8501 and 1546 are both busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
 
 ====================================================================================
 
