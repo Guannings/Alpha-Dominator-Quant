@@ -1,9 +1,11 @@
-## 🚀 How to Run (Docker)
+## 🚀 How to Run Using Docker Provided Here
 
-This project is fully containerized to ensure reproducibility of the financial logic and machine learning environment. It runs consistently on any operating system (Windows, macOS, Linux) with Docker installed.
+This project is fully containerized to ensure reproducibility of the financial logic and machine learning environment. 
+
+**It runs consistently on any operating system (Windows, macOS, Linux) with Docker installed.**
 
 ### 1. Prerequisites
-* **Docker Desktop:** Installed and running. ([Download here](https://www.docker.com/products/docker-desktop/))
+* **Docker Desktop:** Installed and running. ([Download here if you don't have one](https://www.docker.com/products/docker-desktop/))
 * **Git:** To clone the repository.
 
 ### 2. Installation
@@ -25,21 +27,22 @@ docker build -t alpha-dominator .
 
 While Docker ensures environment consistency, the following hardware resources are recommended for optimal performance of the strategy's backtesting and simulation engines:
 
-Memory (RAM): * Minimum: 8GB total system RAM.
+Memory (RAM): Minimum: **8GB** total system RAM.
 
 Docker Allocation: Ensure the Docker Engine is allocated at least 4GB of RAM in your Docker Desktop settings to avoid Out of Memory crashes during high-volume Monte Carlo simulations.
 
-Processor (CPU): * Minimum: 4 Cores.
+Processor (CPU):  Minimum: **4 Cores.**
 
 Optimization: The AdaptiveRegimeClassifier utilizes multi-threading for the walk-forward training process; higher core counts will significantly reduce initial dashboard load times.
 
-Network Access: * Data Ingestion: An active internet connection is mandatory.
+Network Access: Data Ingestion: An active internet connection is mandatory.
 
 API Connection: The container must be able to reach the Yahoo Finance (yfinance) API to download historical and real-time ticker data.
 
-Storage: * Approximately 500MB of disk space for the Docker image and cached market data.
+Storage: Approximately **500MB of disk space** for the Docker image and cached market data.
 
-Architecture Support: * The provided Dockerfile is compatible with both ARM64 (Apple Silicon M1/M2/M3) and x86_64 (Intel/AMD) architectures.
+Architecture Support: The provided Dockerfile is compatible with both ARM64 (Apple Silicon M1/M2/M3) and x86_64 (Intel/AMD) architectures.
+
 ====================================================================================
 # **⚠️ Disclaimer and Terms of Use**
 **1. Educational Purpose Only**
@@ -391,4 +394,4 @@ The Alpha Dominator v10.0 represents a modern evolution in public finance and as
 
 This project was built using an AI-Accelerated Workflow.
 
-Large Language Models (Gemini, Claude Opus 4.5) were utilized to accelerate syntax generation and boilerplate implementation, allowing the focus to remain on quantitative logic, parameter tuning, and risk management validation.
+Large Language Models (Gemini Pro 3, Claude Opus 4.5) were utilized to accelerate syntax generation and boilerplate implementation, allowing the focus to remain on quantitative logic, parameter tuning, and risk management validation.
