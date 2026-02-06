@@ -48,7 +48,7 @@ docker run --rm -p 1546:8501 alpha-dominator
 
 **Port Conflicts:**
 
-**If port 8501 is busy, simply use Option B above to map it to a different local port (change the 4-digit number before :8501 to whatever 4-digit number of your choice).**
+**Currently, port 8501 and 1546 are busy, so simply use custom port above to map it to a different local port (change the 4-digit number before :8501 to a 4-digit number of your choice).**
 
 DNS Issues: If you see Could not resolve host errors, use the Google DNS flag: docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dominator
 
