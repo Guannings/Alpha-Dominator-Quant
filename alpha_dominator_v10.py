@@ -30,7 +30,8 @@ from scipy.optimize import minimize
 from sklearn.ensemble import RandomForestClassifier
 import shap
 import matplotlib
-matplotlib.use('TkAgg')
+
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.patches import Patch
@@ -1477,7 +1478,7 @@ def main():
     # 5. Monte Carlo Calculation
     print("[5/6] Running Monte Carlo simulation...")
     mc = MonteCarloSimulator(
-        n_simulations=10000,
+        n_simulations=1000000,
         projection_years=5,
         risk_free_rate=config.risk_free_rate
     )
