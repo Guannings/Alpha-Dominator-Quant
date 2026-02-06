@@ -26,7 +26,6 @@ Open your terminal (or Command Prompt) and run the following commands:
 ```bash
 # Clone the repository
 git clone https://github.com/Guannings/Alpha-Dominator-Quant.git
-cd alpha-dominator
 ```
 
 ### 3. Enter the project folder
