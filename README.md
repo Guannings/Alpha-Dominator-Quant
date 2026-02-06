@@ -121,11 +121,11 @@ The author assumes no responsibility for hardware failure, system instability, o
 ====================================================================================
 # **Regime-Adaptive Mean-Variance Optimization & Multi-Model Consensus Engine**
 
-This documentation provides an exhaustive, sequential breakdown of the Alpha Dominator v10.0, an robust framework algorithmic trading strategy engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a "Safety-First" approach to high-alpha asset management.
+This documentation provides an exhaustive, sequential breakdown of the Alpha Dominator v10.0, a robust framework algorithmic trading strategy engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a "Safety-First" approach to high-alpha asset management.
 
-**I. Institutional Configuration (StrategyConfig)**
+**I. Prosperous Configuration (StrategyConfig)**
 
-The Institutional Configuration (StrategyConfig) acts as the "Constitution" for the Alpha Dominator v10.0, establishing the rigorous mathematical boundaries required for robust framework portfolio management. It serves as a centralized control center, ensuring that every calculation—from signal detection to trade execution—adheres to predefined risk and performance standards.
+The Prosperous Configuration (StrategyConfig) acts as the "Constitution" for the Alpha Dominator v10.0, establishing the rigorous mathematical boundaries required for potent framework portfolio management. It serves as a centralized control center, ensuring that every calculation—from signal detection to trade execution—adheres to predefined risk and performance standards.
 
 **1. Conviction & Entry Thresholds**
 
@@ -137,7 +137,7 @@ b. prob_ema_span (10-day): Probabilities are smoothed using a 10-day Exponential
 
 **2. The "Velvet Rope" (Alpha Selection)**
 
-Institutional portfolios must focus on efficiency, not just raw returns.
+Vigorious portfolios must focus on efficiency, not just raw returns.
 
 a. ir_threshold (0.5): Assets must maintain an Information Ratio (IR) greater than 0.5 against the SPY benchmark to be eligible for the portfolio. This ensures that the strategy only "dominates" by holding assets that provide genuine, risk-adjusted outperformance.
 
@@ -173,7 +173,9 @@ b. anxiety_ml_prob_threshold (0.75): In an Anxious state, the conviction require
 
 **II. Data Orchestration & Feature Engineering (DataManager)**
 
-The Data Orchestration (DataManager) layer is the engine responsible for the ingestion, cleaning, and complex transformation of raw market data into robust framework features. By moving beyond simple price action, this section builds a high-dimensional view of the market that captures the interplay between momentum, volatility, and macro-economic risk.
+The Data Orchestration (DataManager) layer is the engine responsible for the ingestion, cleaning, and complex transformation of raw market data into robust framework features. 
+
+By moving beyond simple price action, this section builds a high-dimensional view of the market that captures the interplay between momentum, volatility, and macro-economic risk.
 
 **1. Data Acquisition and Universe Selection**
 
@@ -249,7 +251,7 @@ Because black-box models are unacceptable in institutional advisory, the classif
 
 **IV. Strategic Veto Logic (The "Regime Shield")**
 
-The Strategic Veto Logic (internally referred to as the "Regime Shield") serves as the final risk-control layer, designed to protect the portfolio from "Black Swan" events and structural macro-economic shifts that machine learning models might overlook. By applying hard overrides based on institutional financial logic, the strategy ensures that capital preservation takes priority over theoretical alpha generation during periods of extreme market stress.
+The Strategic Veto Logic (internally referred to as the "Regime Shield") serves as the final risk-control layer, designed to protect the portfolio from "Black Swan" events and structural macro-economic shifts that machine learning models might overlook. By applying hard overrides based on serious financial logic, the strategy ensures that capital preservation takes priority over theoretical alpha generation during periods of extreme market stress.
 
 **1. The Hard Trend Veto (The 200-Day SMA Guard)**
 
@@ -291,7 +293,7 @@ b. Purpose: This acts as a circuit breaker, moving the portfolio to safe havens 
 
 **V. Alpha Dominator Optimization (AlphaDominatorOptimizer)**
 
-The Alpha Dominator Optimization (AlphaDominatorOptimizer) is the final execution layer where the strategy translates market regime forecasts into a precisely weighted portfolio. Unlike standard mean-variance optimizers that often produce "all-or-nothing" allocations, this class uses a high-conviction objective function to balance aggressive growth with institutional risk constraints.
+The Alpha Dominator Optimization (AlphaDominatorOptimizer) is the final execution layer where the strategy translates market regime forecasts into a precisely weighted portfolio. Unlike standard mean-variance optimizers that often produce "all-or-nothing" allocations, this class uses a high-conviction objective function to balance aggressive growth with mechanical risk constraints.
 
 **1. The Velvet Rope (Information Ratio Filter)**
 
@@ -351,7 +353,7 @@ a. Adaptive Windows: Instead of rebalancing on a rigid monthly schedule, the eng
 
 b. Lookback Consistency: For every rebalance event, the engine provides the optimizer with a 252-day (one-year) rolling window of returns and covariance, ensuring that the mean-variance math is always grounded in recent, relevant market behavior.
 
-c. Slippage Integration: The engine subtracts a 10 basis point transaction cost for every turnover event, reflecting the reality of institutional trading where high-frequency adjustments can erode total alpha.
+c. Slippage Integration: The engine subtracts a 10 basis point transaction cost for every turnover event, reflecting the reality of trading where high-frequency adjustments can erode total alpha.
 
 **2. The Sniper Score: A KPI for Precision**
 
@@ -363,7 +365,7 @@ b. Signal Identification: A "Buy Signal" is recorded every time the system enter
 
 c. Outcome Validation: To prevent look-ahead bias, the engine waits until the backtest is complete to evaluate each signal. It analyzes the 21-day forward return of the S&P 500 following each signal; if the market return is positive, the "Sniper" hit is marked as successful.
 
-d. Institutional Threshold: The current version (v10.0) targets and achieves a Sniper Score of 75.7%, meaning that roughly three out of every four times the model decides to take risk, the market move justifies that decision.
+d. Hefty Threshold: The current version (v10.0) targets and achieves a Sniper Score of 75.7%, meaning that roughly three out of every four times the model decides to take risk, the market move justifies that decision.
 
 **3. Advanced Performance Metrics**
 
@@ -404,7 +406,7 @@ c. Diffusion Component (σ): Volatility is modeled as a random walk, scaled by t
 
 d. Vectorized Execution: To handle the immense computational load, the simulation logic is fully vectorized using NumPy, allowing for the simultaneous generation of all price paths without slow iterative loops.
 
-e. Institutional Scale: The 1,000,000-Path Stress Test
+e. Sturdy Scale: The 1,000,000-Path Stress Test
 
 f. Statistical Convergence: While standard academic projects run 1,000 to 10,000 simulations, the Alpha Dominator is configured to execute 1,000,000 independent simulations. This scale ensures the Law of Large Numbers applies, minimizing sampling error and producing smooth, reliable probability distributions.
 
@@ -428,7 +430,7 @@ b. Distribution Histograms: It plots the frequency distribution of both CAGR and
 
 **VIII. Conclusion**
 
-The Alpha Dominator v10.0 represents a modern evolution in public finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and institutional wealth preservation.
+The Alpha Dominator v10.0 represents a modern evolution in public finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
 
 ====================================================================================
 # **Development Methodology**
