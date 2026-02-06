@@ -5,7 +5,7 @@ This project is fully containerized to ensure reproducibility.
 **It runs consistently on whatever software envirionment using Docker.**
 
 ### 1. Prerequisites
-**Docker Desktop (The Environment)**
+**a. Docker Desktop (The Environment)**
 
   Installed and running ([Download here if you don't have one](https://www.docker.com/products/docker-desktop/))
   
