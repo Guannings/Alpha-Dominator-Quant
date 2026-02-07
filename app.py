@@ -274,8 +274,17 @@ class AdaptiveRegimeClassifier:
         self.model_stability = 'UNKNOWN'
 
     def walk_forward_train(self, features, returns, initial_train_years=5, step_months=12):
+        # --- CORRECTED FIX ---
+        # We check 'returns' because that is the name of the argument above
+        if features.empty or returns.empty:
+            logger.warning("Data is empty. Returning neutral probabilities.")
+            return pd.Series(0.5, index=features.index)
+        # ---------------------
+
         logger.info("Starting adaptive walk-forward training (CONSENSUS ENGINE)")
         self.feature_names = features.columns.tolist()
+
+        # Now we define target, so the rest of the code works
         target = (returns.shift(-21).rolling(21).sum() > 0).astype(int).dropna()
 
         valid_idx = features.index.intersection(target.index)
@@ -1683,7 +1692,7 @@ def main():
     # ==========================================================================
     st.markdown("### 📋 Current Portfolio Allocation")
     allocation_df = create_allocation_table(engine, optimizer, above_sma, config)
-    st.dataframe(allocation_df, use_container_width=True, hide_index=True)
+    st.dataframe(allocation_df, use_container_width='stretch', hide_index=True)
 
     # Constraint status
     diag = engine.final_diagnostics
