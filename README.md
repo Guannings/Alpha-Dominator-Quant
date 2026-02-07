@@ -68,7 +68,7 @@ cd ~
 # Then go to oyur desktop:
 cd Desktop
 ```
-Then clone the repo.
+Then proceed with **2. Installation** and its following commands.
 
 #### **2. Case Sensitivity & Folder Names**
 If you encounter a "Path not found" error when using `cd`, ensure you are matching the exact capitalization of the repository:
