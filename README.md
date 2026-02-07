@@ -56,6 +56,14 @@ docker run --rm --dns 8.8.8.8 -p 1546:8501 alpha-dominator
 ```
 Access at: Local URL
 
+Option C: The "One-Click" Launch
+To avoid Docker caching issues and ensure the latest 1M simulation settings are applied, run the automated launch script:
+
+```bash
+chmod +x run_app.sh
+./run_app.sh
+```
+
 ### 💡 Troubleshooting & Best Practices
 
 #### **1. Avoid System Folders (Windows Users)**
