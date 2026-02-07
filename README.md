@@ -56,8 +56,28 @@ docker run --rm --dns 8.8.8.8 -p 1546:8501 alpha-dominator
 ```
 Access at: Local URL
 
-**Port Conflicts:**
+### 💡 Troubleshooting & Best Practices
 
+#### **1. Avoid System Folders (Windows Users)**
+Do **not** clone this repository into `C:\Windows\System32` or other restricted system directories. This will cause permission errors with Git and Docker. 
+
+**Recommended Path:** Clone into a user-controlled folder via the commands below:
+```bash
+# Go to your user folder
+cd ~
+# Then go to oyur desktop:
+cd Desktop
+```
+Then clone the repo.
+
+#### **2. Case Sensitivity & Folder Names**
+If you encounter a "Path not found" error when using `cd`, ensure you are matching the exact capitalization of the repository:
+```powershell
+# Use Tab-completion in your terminal to avoid typos
+cd Alpha-Dominator-Quant
+```
+
+#### **3. Port Conflicts:**
 **If ports 8501 and 1546 are both busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
 
 ====================================================================================
