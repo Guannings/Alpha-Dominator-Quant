@@ -21,11 +21,11 @@ This project is fully containerized to ensure reproducibility.
 
 
 ### 2. Installation
-Open your terminal (or Command Prompt) and run the following commands:
+Open your terminal (or Command Prompt) and run:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Guannings/Alpha-Dominator-Quant.git
+git clone [https://github.com/Guannings/Alpha-Dominator-Quant.git](https://github.com/Guannings/Alpha-Dominator-Quant.git)
 ```
 
 ### 3. Enter the project folder
@@ -38,34 +38,33 @@ cd alpha-dominator-quant
 docker build --no-cache -t alpha-dominator .
 ```
 
-### 5. Launching the Dashboard
+### 5. Launching the Dashboard (Choose One Method)
 
-You can choose the port that best fits your local setup:
-
-Option A: Default Port (8501)
+Method A: The "One-Click" Launch (Recommended) Best for first-time setup. This script automatically handles the build, cache-clearing, and port mapping to ensure the 1M simulations work correctly.
 
 ```bash
-docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dominator
-```
-Access at: Local URL
-
-Option B: Custom Port (e.g., 1546)
-
-```bash
-docker run --rm --dns 8.8.8.8 -p 1546:8501 alpha-dominator
-```
-Access at: Local URL
-
-Option C: The "One-Click" Launch
-To avoid Docker caching issues and ensure the latest 1M simulation settings are applied, run the automated launch script:
-
-```bash
+# 1. Make the script executable (only needed once)
 chmod +x run_app.sh
+```
+
+```bash
+# 2. Launch the App
 ./run_app.sh
 ```
 
-### 💡 Troubleshooting & Best Practices
+Method B: Manual Build & Run (Advanced) Use this if you want to configure specific ports or debug the Dockerfile manually.
 
+```bash
+# 1. Build the Image (Force fresh build)
+docker build --no-cache -t alpha-dominator .
+```
+
+```bash
+# 2. Run the Container
+docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dominator
+```
+
+### 💡 Troubleshooting & Best Practices
 #### **1. Avoid System Folders (Windows Users)**
 Do **not** clone this repository into `C:\Windows\System32` or other restricted system directories. This will cause permission errors with Git and Docker. 
 
