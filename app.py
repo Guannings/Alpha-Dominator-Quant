@@ -1213,7 +1213,7 @@ class MonteCarloSimulator:
         self.risk_free_rate = risk_free_rate
 
         # We only store full paths for a small subset to save RAM
-        self.n_display_paths = 50000
+        self.n_display_paths = 10000
         self.display_paths: Optional[np.ndarray] = None
 
         self.ending_values: Optional[np.ndarray] = None
@@ -1284,22 +1284,20 @@ class MonteCarloSimulator:
             'prob_loss': np.mean(self.ending_values < self.initial_value),
         }
 
-    def get_paths_figure(self, n_display: int = 100) -> Optional[plt.Figure]:
-        """Generate paths figure from the saved subset."""
+    def get_paths_figure(self, n_display: int = 200) -> Optional[plt.Figure]:
+        """Generate paths figure with Y-Axis Capping to remove outliers."""
         if self.display_paths is None:
             return None
 
         fig, ax = plt.subplots(figsize=(14, 8))
 
         # Use the subset we saved
-        # We ensure we don't ask for more paths than we saved
         n_plot = min(n_display, self.n_display_paths)
         paths_to_plot = self.display_paths[:, :n_plot]
         ending_values_subset = paths_to_plot[-1]
 
-        # Dynamic coloring based on ending value
+        # Dynamic coloring
         cmap = plt.get_cmap('RdYlGn')
-        # Normalize colors based on the full simulation range, not just the subset
         norm = plt.Normalize(np.percentile(self.ending_values, 5),
                              np.percentile(self.ending_values, 95))
 
@@ -1308,10 +1306,16 @@ class MonteCarloSimulator:
             ax.plot(days, paths_to_plot[:, i],
                     color=cmap(norm(ending_values_subset[i])), alpha=0.3, linewidth=0.5)
 
-        # Calculate mean path from the subset for visualization
+        # Plot the Mean Path (The Red Line)
         mean_path = np.mean(paths_to_plot, axis=1)
+        ax.plot(days, mean_path, 'r-', linewidth=3, label=f'Mean Path')
 
-        ax.plot(days, mean_path, 'r-', linewidth=2.5, label=f'Subset Mean')
+        # --- THE FIX: INTELLIGENT Y-AXIS SCALING ---
+        # We cap the Y-axis at the 95th percentile.
+        # This cuts off the freak "lotto" outliers so the Mean Line looks good.
+        y_cap = np.percentile(self.ending_values, 95)
+        ax.set_ylim(0, y_cap)
+        # -------------------------------------------
 
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         plt.colorbar(sm, ax=ax, label='Ending Value ($)', pad=0.01)
@@ -1321,8 +1325,17 @@ class MonteCarloSimulator:
             f'Monte Carlo ({self.n_simulations:,} Sims) | CAGR: {stats["mean_cagr"]:.1%} | Sharpe: {stats["sharpe"]:.2f}',
             fontsize=11)
         ax.set_xlabel('Trading Days (5 Years)')
-        ax.set_ylabel('Portfolio Value ($)')
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        ax.set_ylabel('Portfolio Value ($) [Top 5% Outliers Hidden]')
+
+        # --- THE FIX: SMART CURRENCY FORMATTER (M for Millions, k for Thousands) ---
+        def smart_currency(x, pos):
+            if x >= 1_000_000:
+                return f'${x / 1_000_000:.1f}M'
+            else:
+                return f'${x / 1_000:.0f}k'
+
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(smart_currency))
+        # -------------------------------------------------------------------------
         ax.legend(loc='upper left')
         ax.grid(True, alpha=0.3)
 
