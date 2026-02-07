@@ -1548,6 +1548,18 @@ def render_detailed_metrics(metrics: Dict, engine: BacktestEngine, classifier: A
 
 
 def main():
+    # ==========================================================================
+    # SIDEBAR CONTROLS
+    # ==========================================================================
+    st.sidebar.header("⚙️ Strategy Configuration")
+
+    # --- ADD THIS BLOCK HERE ---
+    if st.sidebar.button("🔄 Hard Reset App"):
+        st.session_state.clear()  # Wipes all memory
+        st.cache_resource.clear()  # Wipes the loaded data/models
+        st.rerun()  # Restarts the script from top
+    # ---------------------------
+
     """Main Streamlit application."""
     st.set_page_config(
         page_title="Alpha Dominator v10.0",
