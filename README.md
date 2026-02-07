@@ -35,7 +35,7 @@ cd alpha-dominator-quant
 
 ### 4. Build the Docker Image (This installs the Python 3.11 environment + XGBoost + SHAP.)
 ```bash
-docker build -t alpha-dominator .
+docker build --no-cache -t alpha-dominator .
 ```
 
 ### 5. Launching the Dashboard
