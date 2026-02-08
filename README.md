@@ -85,7 +85,7 @@ cd Alpha-Dominator-Quant
 ```
 
 #### **3. Port Conflicts:**
-**If ports 8501 and 1546 are both busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
+**If port 8501 is busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
 
 ====================================================================================
 
