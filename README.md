@@ -246,9 +246,9 @@ The strategy avoids "single-model bias" by utilizing a dual-model voting system.
 
 a. Model Alpha (The Aggressor): An XGBoost Classifier that excels at capturing complex, non-linear relationships between factors like volatility and momentum.
 
-Model Beta (The Skeptic): A highly regularized Decision Tree with a shallow depth (max_depth=2) and a large minimum leaf size (min_samples_leaf=200). This model acts as a "sanity check," filtering out any signals that are not supported by large, stable historical patterns.
+b. Model Beta (The Skeptic): A highly regularized Decision Tree with a shallow depth (max_depth=2) and a large minimum leaf size (min_samples_leaf=200). This model acts as a "sanity check," filtering out any signals that are not supported by large, stable historical patterns.
 
-b. The Consensus Rule: A "Risk-On" signal is only generated if both models agree on a bullish probability above their respective thresholds (55% for XGBoost and 50% for the Decision Tree) and the market's current trend score is positive.
+c. The Consensus Rule: A "Risk-On" signal is only generated if both models agree on a bullish probability above their respective thresholds (55% for XGBoost and 50% for the Decision Tree) and the market's current trend score is positive.
 
 **2. The Role of Monotonic Constraints**
 
