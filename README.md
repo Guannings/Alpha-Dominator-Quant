@@ -127,7 +127,7 @@ Nothing in this repository constitutes professional financial, legal, or tax adv
 
 All investments involve risk, including the possible loss of principal.
 
-a. Past Performance: Historical returns (such as the 19.5% CAGR) and volatility data used in these simulations are not indicative of future results.
+a. Past Performance: Historical returns (such as the CAGR in any plots generated from this model) and volatility data used in these simulations are not indicative of future results.
 
 b. Simulation Limitations: Monte Carlo simulations are probabilistic models based on assumptions (such as constant drift and volatility) that may not reflect real-world market conditions, black swan events, or liquidity crises.
 
