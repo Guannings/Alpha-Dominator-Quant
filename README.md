@@ -25,7 +25,7 @@ Open your terminal (or Command Prompt) and run:
 
 ```bash
 # Clone the repository
-git clone [https://github.com/Guannings/Alpha-Dominator-Quant.git](https://github.com/Guannings/Alpha-Dominator-Quant.git)
+git clone https://github.com/Guannings/Alpha-Dominator-Quant.git
 ```
 
 ### 3. Enter the project folder
@@ -85,7 +85,7 @@ cd Alpha-Dominator-Quant
 ```
 
 #### **3. Port Conflicts:**
-**If ports 8501 and 1546 are both busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
+**If port 8501 is busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
 
 ====================================================================================
 
@@ -117,7 +117,7 @@ Data Pipeline: High-speed internet access is mandatory for real-time data ingest
 # **⚠️ Disclaimer and Terms of Use**
 **1. Educational Purpose Only**
 
-This software is for educational and research purposes only and was built as a personal project by a student at National Chengchi University (NCCU). It is not intended to be a source of financial advice, and the authors are not registered financial advisors. The algorithms, simulations, and optimization techniques implemented herein—including Consensus Machine Learning, Shannon Entropy, and Geometric Brownian Motion—are demonstrations of theoretical concepts and should not be construed as a recommendation to buy, sell, or hold any specific security or asset class.
+This software is for educational and research purposes only and was built as a personal project by a student, PEHC, studing at National Chengchi University (NCCU). It is not intended to be a source of financial advice, and the author is not registered financial advisors. The algorithms, simulations, and optimization techniques implemented herein—including Consensus Machine Learning, Shannon Entropy, and Geometric Brownian Motion—are demonstrations of theoretical concepts and should not be construed as a recommendation to buy, sell, or hold any specific security or asset class.
 
 **2. No Financial Advice**
 
@@ -127,13 +127,13 @@ Nothing in this repository constitutes professional financial, legal, or tax adv
 
 All investments involve risk, including the possible loss of principal.
 
-a. Past Performance: Historical returns (such as the 19.5% CAGR) and volatility data used in these simulations are not indicative of future results.
+a. Past Performance: Historical returns (such as the CAGR in any plots generated from this model) and volatility data used in these simulations are not indicative of future results.
 
 b. Simulation Limitations: Monte Carlo simulations are probabilistic models based on assumptions (such as constant drift and volatility) that may not reflect real-world market conditions, black swan events, or liquidity crises.
 
 c. Model Vetoes: While the Rate Shock Guard and Anxiety Veto are designed to mitigate losses, they are based on historical thresholds that may fail in unprecedented macro-economic environments.
 
-Market Data: Data fetched from third-party APIs (e.g., Yahoo Finance) may be delayed, inaccurate, or incomplete.
+d. Market Data: Data fetched from third-party APIs (e.g., Yahoo Finance) may be delayed, inaccurate, or incomplete.
 
 **4. Hardware and Computation Liability**
 
@@ -141,7 +141,7 @@ The author assumes no responsibility for hardware failure, system instability, o
 
 **5. "AS-IS" SOFTWARE WARRANTY**
 
-**THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.**
+**THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.**
 
 **BY USING THIS SOFTWARE, YOU AGREE TO ASSUME ALL RISKS ASSOCIATED WITH YOUR INVESTMENT DECISIONS AND HARDWARE USAGE, RELEASING THE AUTHOR (PEHC) FROM ANY LIABILITY REGARDING YOUR FINANCIAL OUTCOMES OR SYSTEM INTEGRITY.**
 
@@ -246,9 +246,9 @@ The strategy avoids "single-model bias" by utilizing a dual-model voting system.
 
 a. Model Alpha (The Aggressor): An XGBoost Classifier that excels at capturing complex, non-linear relationships between factors like volatility and momentum.
 
-Model Beta (The Skeptic): A highly regularized Decision Tree with a shallow depth (max_depth=2) and a large minimum leaf size (min_samples_leaf=200). This model acts as a "sanity check," filtering out any signals that are not supported by large, stable historical patterns.
+b. Model Beta (The Skeptic): A highly regularized Decision Tree with a shallow depth (max_depth=2) and a large minimum leaf size (min_samples_leaf=200). This model acts as a "sanity check," filtering out any signals that are not supported by large, stable historical patterns.
 
-b. The Consensus Rule: A "Risk-On" signal is only generated if both models agree on a bullish probability above their respective thresholds (55% for XGBoost and 50% for the Decision Tree) and the market's current trend score is positive.
+c. The Consensus Rule: A "Risk-On" signal is only generated if both models agree on a bullish probability above their respective thresholds (55% for XGBoost and 50% for the Decision Tree) and the market's current trend score is positive.
 
 **2. The Role of Monotonic Constraints**
 
@@ -457,7 +457,7 @@ b. Distribution Histograms: It plots the frequency distribution of both CAGR and
 
 **VIII. Conclusion**
 
-The Alpha Dominator v10.0 represents a modern evolution in public finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
+The Alpha Dominator v10.0 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
 
 ====================================================================================
 # **Development Methodology**
